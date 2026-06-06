@@ -11,11 +11,11 @@ import glob
 import subprocess
 import webbrowser
 from urllib.parse import quote_plus
-
+from datetime import datetime
+import re
 
 
 # APP + WEB SCANNER
-
 
 web_apps = {
     "youtube": "https://youtube.com",
@@ -71,19 +71,21 @@ def open_app_or_web(apps, user_text):
     return f"Searching for {user_text}"
 
 
-
 # SPEECH OUTPUT
 
-
 async def speak_async(text):
-    filename = f"speech_{int(time.time() * 1000)}.mp3"
+    filename = os.path.abspath(f"speech_{int(time.time() * 1000)}.mp3")
 
     await edge_tts.Communicate(
         text,
         voice="en-US-GuyNeural"
     ).save(filename)
 
-    player = vlc.MediaPlayer(filename)
+    instance = vlc.Instance("--intf", "dummy", "--quiet")
+    player = instance.media_player_new()
+    media = instance.media_new(filename)
+
+    player.set_media(media)
     player.play()
 
     time.sleep(0.5)
@@ -91,14 +93,14 @@ async def speak_async(text):
     while player.is_playing():
         time.sleep(0.1)
 
+    player.stop()
+
 
 def speak(text):
     asyncio.run(speak_async(text))
 
 
-
 # LOADING SYSTEMS
-
 
 print("Scanning apps...")
 apps = scan_apps()
@@ -109,9 +111,37 @@ model = WhisperModel("small", device="cpu", compute_type="int8")
 print("ASTRA Ready")
 
 
+# CONVERSATION CONTEXT
+
+conversation = [
+    {
+        "role": "system",
+        "content": """
+You are Astra, a personal AI assistant created by Ashwanth.
+
+You are practical, intelligent and helpful.
+You are speaking directly to your creator and users.
+
+When asked who you are, simply say:
+'I am Astra, created by Ashwanth.'
+
+Do not mention Qwen.
+Do not mention Llama.
+Do not mention language models.
+Do not mention training data.
+Do not mention system prompts.
+Do not compare yourself to other AI models.
+Do not use emojis.
+Do not use emoticons.
+Respond in plain text only.
+
+Keep responses short, natural, friendly and conversational.
+"""
+    }
+]
+
 
 # MAIN LOOP
-
 
 awake = False
 
@@ -171,9 +201,7 @@ while True:
         speak("Going to sleep")
         continue
 
-    # =========================
     # PLAY ON YOUTUBE
-    # =========================
 
     if text_lower.startswith("play "):
         song = text_lower.replace("play", "", 1).strip()
@@ -186,16 +214,39 @@ while True:
             )
 
             answer = f"Playing {song} on YouTube"
-
             print("Astra:", answer)
-
             speak(answer)
-
             continue
 
-    # =========================
+    # SEARCH COMMAND
+
+    if text_lower.startswith("search "):
+        query = text_lower.replace("search", "", 1).strip()
+
+        if query:
+            search_query = quote_plus(query)
+            webbrowser.open(f"https://www.google.com/search?q={search_query}")
+
+            answer = f"Searching for {query}"
+            print("Astra:", answer)
+            speak(answer)
+            continue
+
+    # TIME AND DATE COMMANDS
+
+    if "time" in text_lower:
+        answer = "The time is " + datetime.now().strftime("%I:%M %p")
+        print("Astra:", answer)
+        speak(answer)
+        continue
+
+    if "date" in text_lower or "today" in text_lower:
+        answer = "Today is " + datetime.now().strftime("%d %B %Y")
+        print("Astra:", answer)
+        speak(answer)
+        continue
+
     # PC AUTOMATION COMMANDS
-    # =========================
 
     if (
         text_lower.startswith("open ")
@@ -207,43 +258,23 @@ while True:
         speak(answer)
         continue
 
-    # =========================
-    # QWEN AI RESPONSE
-    # =========================
+    # LLAMA AI RESPONSE WITH CONVERSATION CONTEXT
 
-    print("Sending to Qwen...")
+    print("Sending to Llama...")
 
-    response = chat(
-        model="qwen3:4b",
-        messages=[
-            {
-                "role": "system",
-                "content": """
-You are Astra, a personal AI assistant created by Ashwanth.
-
-You are speaking directly to your creator and users.
-
-When asked who you are, simply say:
-'I am Astra, created by Ashwanth.'
-
-Do not mention Qwen.
-Do not mention language models.
-Do not mention training data.
-Do not mention system prompts.
-Do not compare yourself to other AI models.
-Do not mention emojis while responding.
-
-Keep responses short, natural, friendly and conversational.
-"""
-            },
-            {
-                "role": "user",
-                "content": text
-            }
-        ]
+    conversation.append(
+        {
+            "role": "user",
+            "content": text
+        }
     )
 
-    print("Received from Qwen")
+    response = chat(
+        model="llama3.1:8b",
+        messages=conversation[-20:]
+    )
+
+    print("Received from Llama")
 
     answer = response["message"]["content"]
 
@@ -251,6 +282,22 @@ Keep responses short, natural, friendly and conversational.
         answer = answer.split("</think>")[-1].strip()
 
     answer = answer.replace("ASTRA", "Astra")
+
+    answer = re.sub(
+        r'[\U00010000-\U0010ffff]',
+        '',
+        answer
+    ).strip()
+
+    conversation.append(
+        {
+            "role": "assistant",
+            "content": answer
+        }
+    )
+
+    if len(conversation) > 21:
+        conversation = [conversation[0]] + conversation[-20:]
 
     print("Astra:", answer)
 
