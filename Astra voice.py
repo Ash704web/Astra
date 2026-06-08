@@ -13,9 +13,20 @@ import webbrowser
 from urllib.parse import quote_plus
 from datetime import datetime
 import re
+from ytmusicapi import YTMusic
 
 
-# APP + WEB SCANNER
+import easyocr
+import pyautogui
+import pygetwindow as gw
+
+windows = gw.getAllTitles()
+
+
+BRAIN_MODEL = "llama3.1:8b"
+VISION_MODEL = "qwen2.5vl:7b"
+
+
 
 web_apps = {
     "youtube": "https://youtube.com",
@@ -26,6 +37,9 @@ web_apps = {
     "github": "https://github.com",
     "google": "https://google.com",
 }
+
+
+
 
 
 def scan_apps():
@@ -71,7 +85,85 @@ def open_app_or_web(apps, user_text):
     return f"Searching for {user_text}"
 
 
-# SPEECH OUTPUT
+print("Loading OCR...")
+ocr_reader = easyocr.Reader(["en"], gpu=False)
+print("OCR ready")
+
+
+def take_screen_screenshot():
+    os.makedirs("screenshots", exist_ok=True)
+
+    filename = f"screenshots/astra_screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+
+    screenshot = pyautogui.screenshot()
+    screenshot = screenshot.resize((1600, 900))
+    screenshot.save(filename)
+
+    return filename
+
+
+def read_screen_text(image_path):
+    result = ocr_reader.readtext(image_path)
+
+    lines = []
+
+    for item in result:
+        text = item[1].strip()
+
+        if len(text) < 2:
+            continue
+
+        lines.append(text)
+
+    return "\n".join(lines[:100])
+
+
+def describe_screen():
+    image_path = take_screen_screenshot()
+    ocr_text = read_screen_text(image_path)
+
+    print("ASTRA is analyzing the screen...")
+
+    prompt = f"""
+    Analyze the entire desktop carefully.
+
+    Look for ALL visible applications.
+
+    Do not focus only on the largest window.
+    
+    Do not read hashtags and asterisks.
+
+    List every visible application:
+    - App name
+    - Purpose
+
+    Pay special attention to browser tabs,
+    GitHub pages,
+    ChatGPT,
+    PyCharm,
+    terminals,
+    file explorers,
+    and secondary windows.
+
+    If multiple windows are visible, mention all of them.
+
+    OCR text:
+    {ocr_text}
+    """
+
+    response = chat(
+        model=VISION_MODEL,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+                "images": [image_path]
+            }
+        ]
+    )
+
+    return response["message"]["content"].strip()
+
 
 async def speak_async(text):
     filename = os.path.abspath(f"speech_{int(time.time() * 1000)}.mp3")
@@ -95,12 +187,15 @@ async def speak_async(text):
 
     player.stop()
 
+    try:
+        os.remove(filename)
+    except:
+        pass
+
 
 def speak(text):
     asyncio.run(speak_async(text))
 
-
-# LOADING SYSTEMS
 
 print("Scanning apps...")
 apps = scan_apps()
@@ -108,10 +203,9 @@ print("Apps found:", len(apps))
 
 print("Loading Whisper...")
 model = WhisperModel("small", device="cpu", compute_type="int8")
+ytmusic = YTMusic()
 print("ASTRA Ready")
 
-
-# CONVERSATION CONTEXT
 
 conversation = [
     {
@@ -140,8 +234,6 @@ Keep responses short, natural, friendly and conversational.
     }
 ]
 
-
-# MAIN LOOP
 
 awake = False
 
@@ -201,24 +293,60 @@ while True:
         speak("Going to sleep")
         continue
 
-    # PLAY ON YOUTUBE
+    if (
+        "describe the screen" in text_lower
+        or "describe my screen" in text_lower
+        or "what is on my screen" in text_lower
+        or "whats on my screen" in text_lower
+        or "what's on my screen" in text_lower
+        or "read my screen" in text_lower
+        or "look at my screen" in text_lower
+    ):
+        print("Astra is checking screen...")
+        speak("Looking at your screen")
+
+        try:
+            answer = describe_screen()
+        except Exception as e:
+            print("Screen vision error:", e)
+            answer = "I had trouble analyzing the screen."
+
+        print("Astra:", answer)
+        speak(answer)
+        continue
 
     if text_lower.startswith("play "):
         song = text_lower.replace("play", "", 1).strip()
 
         if song:
-            search_query = quote_plus(song)
+            try:
+                results = ytmusic.search(song, filter="songs")
 
-            webbrowser.open(
-                f"https://www.youtube.com/results?search_query={search_query}"
-            )
+                if results:
+                    video_id = results[0]["videoId"]
+                    url = f"https://www.youtube.com/watch?v={video_id}"
+                    webbrowser.open(url)
+                    answer = f"Playing {song} on YouTube"
+                else:
+                    webbrowser.open(
+                        f"https://www.youtube.com/results?search_query={quote_plus(song)}"
+                    )
+                    answer = f"I found YouTube results for {song}"
 
-            answer = f"Playing {song} on YouTube"
+            except Exception as e:
+                print("YouTube play error:", e)
+                webbrowser.open(
+                    f"https://www.youtube.com/results?search_query={quote_plus(song)}"
+                )
+                answer = f"I found YouTube results for {song}"
+
             print("Astra:", answer)
             speak(answer)
-            continue
 
-    # SEARCH COMMAND
+            awake = False
+            print("Astra went to sleep after playing music")
+
+            continue
 
     if text_lower.startswith("search "):
         query = text_lower.replace("search", "", 1).strip()
@@ -232,8 +360,6 @@ while True:
             speak(answer)
             continue
 
-    # TIME AND DATE COMMANDS
-
     if "time" in text_lower:
         answer = "The time is " + datetime.now().strftime("%I:%M %p")
         print("Astra:", answer)
@@ -246,8 +372,6 @@ while True:
         speak(answer)
         continue
 
-    # PC AUTOMATION COMMANDS
-
     if (
         text_lower.startswith("open ")
         or text_lower.startswith("launch ")
@@ -257,8 +381,6 @@ while True:
         print("Astra:", answer)
         speak(answer)
         continue
-
-    # LLAMA AI RESPONSE WITH CONVERSATION CONTEXT
 
     print("Sending to Llama...")
 
@@ -270,7 +392,7 @@ while True:
     )
 
     response = chat(
-        model="llama3.1:8b",
+        model=BRAIN_MODEL,
         messages=conversation[-20:]
     )
 
