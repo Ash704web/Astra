@@ -1,14 +1,12 @@
-# ASTRA
+# ASTRA v0.5
 
-A local-first AI assistant created by Ashwanth.
-
----
+A local-first intelligent desktop assistant created by Ashwanth.
 
 ## Overview
 
-ASTRA is a voice-controlled desktop AI assistant designed to provide a natural and intelligent interaction experience on personal computers.
+ASTRA is a personal AI assistant designed to bring advanced intelligence to existing desktop and laptop operating systems. The long-term vision is to create a digital intelligence that makes computers feel alive through natural interaction, contextual awareness, automation, memory, and intelligent assistance.
 
-The long-term vision is to create a highly capable digital intelligence that can understand conversations, automate tasks, interact with software, understand screens, and eventually integrate with the Retrofit smart-home ecosystem.
+Version 0.5 represents the first major milestone where ASTRA can hear, think, speak, see, and understand what is happening on the screen.
 
 ---
 
@@ -16,171 +14,293 @@ The long-term vision is to create a highly capable digital intelligence that can
 
 ### Voice Interaction
 
-* Wake word activation ("Astra")
-* Offline speech recognition using Faster-Whisper
-* Natural voice responses using Edge-TTS
-* Silent background audio playback using VLC
+* Wake word activation
+* Natural voice conversations
+* Speech-to-text using Faster Whisper
+* Text-to-speech using Microsoft Edge TTS
+* Sleep mode support
 
-### AI Intelligence
+Example:
 
-* Powered by Llama 3.1 8B through Ollama
-* Context-aware conversations
-* Follow-up question understanding
-* General knowledge assistance
-* Coding assistance
-* Problem solving and explanations
+User:
+Astra
 
-### Conversational Context
+ASTRA:
+Yes?
 
-* Maintains recent conversation history
-* Understands references to previous messages
-* Supports natural multi-turn discussions
-* Context window management for efficient memory usage
+---
 
-### Desktop Automation
+### Conversational Intelligence
 
-* Open installed applications
-* Open web applications
-* Launch websites
-* Google search commands
-* YouTube play commands
+* Local LLM-powered reasoning
+* Multi-turn conversations
+* Context-aware responses
+* Runtime conversation memory
+* Personal assistant behavior
 
-### Built-in Commands
+---
 
-* Open applications
-* Open websites
-* Search Google
-* Play songs on YouTube
-* Current time
-* Current date
-* Sleep mode
-* Exit command
+### Application Launcher
+
+ASTRA can launch installed desktop applications.
+
+Examples:
+
+* Open Chrome
+* Open PyCharm
+* Open Spotify
+* Launch Edge
+
+---
+
+### Web Launcher
+
+ASTRA can open commonly used websites directly.
+
+Supported websites:
+
+* YouTube
+* ChatGPT
+* GitHub
+* Claude
+* Instagram
+* Google
+* Sanfoundry
+
+Examples:
+
+* Open GitHub
+* Open ChatGPT
+* Open YouTube
+
+---
+
+### Internet Search
+
+Examples:
+
+* Search NVIDIA
+* Search VLSI Design
+* Search Python Inheritance
+
+ASTRA automatically opens the search in the default browser.
+
+---
+
+### YouTube Integration
+
+Examples:
+
+* Play Believer
+* Play Faded
+* Play Shape of You
+
+Current capabilities:
+
+* Opens matching YouTube videos
+* Starts media playback
+* Automatically enters sleep mode after playback starts
+
+---
+
+### Screen Vision
+
+Powered by:
+
+* Qwen2.5-VL 7B
+* EasyOCR
+
+Capabilities:
+
+* Full desktop screenshot analysis
+* Multi-window understanding
+* Application recognition
+* Workspace understanding
+* Activity recognition
+
+Examples:
+
+* Detects PyCharm
+* Detects ChatGPT
+* Detects GitHub
+* Detects browser windows
+* Detects development environments
+
+---
+
+### OCR Integration
+
+EasyOCR is used to extract text visible on screen.
+
+Benefits:
+
+* Improves screen understanding accuracy
+* Reads visible UI text
+* Enhances vision model performance
+
+Pipeline:
+
+Screenshot
+→ OCR
+→ Vision Model
+→ Screen Understanding
+
+---
+
+### Screen Awareness Commands
+
+Examples:
+
+* Describe the screen
+* Read my screen
+* What is on my screen
+* Look at my screen
+
+ASTRA can summarize visible applications and explain what the user appears to be doing.
+
+---
+
+### Utilities
+
+Time
+
+Example:
+
+* What time is it?
+
+Date
+
+Example:
+
+* What is today's date?
 
 ---
 
 ## Technology Stack
 
-### Core AI
+### AI Models
 
-* Ollama
 * Llama 3.1 8B
+* Qwen2.5-VL 7B
 
-### Speech Recognition
+### Speech
 
-* Faster-Whisper
+* Faster Whisper
+* Edge TTS
 
-### Text-to-Speech
+### Vision
 
-* Edge-TTS
+* EasyOCR
+* Qwen2.5-VL
 
-### Audio Playback
+### Desktop Automation
 
-* VLC
+* PyAutoGUI
+* Python
 
-### Programming Language
+### Core Language
 
 * Python
 
-### Automation Libraries
+---
 
-* SoundDevice
-* SciPy
-* WebBrowser
-* Subprocess
-* Python Standard Library
+## Current Architecture
+
+ASTRA v0.5
+
+Voice Input
+↓
+Whisper STT
+↓
+Intent Processing
+↓
+Llama Intelligence
+↓
+Tool Execution
+↓
+Edge TTS Speech Output
+
+Additional Modules
+
+* Screen Vision
+* OCR
+* App Launcher
+* Web Search
+* YouTube Integration
 
 ---
 
-## Current Version
+## Current Limitations
 
-### Astra v0.4
-
-### Completed Features
-
-#### Voice System
-
-* Voice input
-* Voice output
-* Wake word detection
-* Sleep mode
-* Exit mode
-
-#### AI System
-
-* Llama 3.1 8B integration
-* Context-aware conversations
-* Multi-turn discussions
-* Natural responses
-
-#### Automation System
-
-* App launcher
-* Website launcher
-* Google search
-* YouTube search and play
-* Time command
-* Date command
+* No persistent memory across restarts
+* No internet intelligence routing
+* No autonomous workflows
+* No browser state monitoring
+* No coding assistant integration
+* No terminal awareness
+* No file awareness
+* No OS-level contextual memory
 
 ---
 
-## Roadmap
+## Future Roadmap
 
-### Astra v0.5
+### ASTRA v0.6
 
-* Screen Vision Prototype
-* Screenshot Capture
-* Screen Understanding
-* Error Detection
+* Persistent memory
+* Intent router
+* File awareness
+* Terminal awareness
+* Coding assistant foundation
 
-### Astra v0.6
+### ASTRA v0.7
 
-* Vision + Cursor Control
-* Intelligent Screen Interaction
-* UI Element Detection
+* Internet intelligence
+* Live web search
+* Tool routing
+* Advanced browser control
 
-### Astra v0.7
+### ASTRA v0.8
 
-* Advanced Desktop Automation
-* System Controls
-* File and Folder Operations
+* Autonomous actions
+* Workflow automation
+* Context-based assistance
+* Multi-step task execution
 
-### Astra v0.8
+### Long-Term Vision
 
-* Persistent Memory System
-* User Preferences
-* Personalized Responses
-
-### Astra v1.0
-
-* Full Desktop Agent
-* Deep Operating System Integration
-* Advanced Automation Engine
-* Retrofit Integration
+Create a local-first digital intelligence capable of understanding the computer, user workflows, applications, files, and environment in a human-like manner while maintaining privacy and deep operating system integration.
 
 ---
 
-## Long-Term Vision
+## Project Status
 
-ASTRA aims to become a local-first digital intelligence capable of:
+Version: v0.5
 
-* Natural conversation
-* Computer automation
-* Screen understanding
-* Context awareness
-* Personalized assistance
-* Smart-home integration through Retrofit
+Status: Functional Prototype
 
-The goal is to create a practical real-world assistant inspired by systems such as Jarvis while remaining grounded in current technology.
+Capabilities:
+
+✓ Hear
+
+✓ Think
+
+✓ Speak
+
+✓ See
+
+✓ Read Screen
+
+✓ Open Applications
+
+✓ Search Web
+
+✓ Play Media
+
+✓ Understand Workspace Context
 
 ---
 
-## Author
+Created by Ashwanth
 
-Ashwanth
-
----
-
-## Status
-
-Actively under development.
-Current stable release: Astra v0.4
+"Building the digital ecosystem for future computers."
