@@ -14,6 +14,7 @@ from urllib.parse import quote_plus
 from datetime import datetime
 import re
 from ytmusicapi import YTMusic
+from ddgs import DDGS
 
 
 import easyocr
@@ -39,6 +40,88 @@ web_apps = {
 }
 
 
+
+
+def search_internet(query):
+    try:
+        search_queries = [
+            query,
+            query + " official",
+            query + " date",
+        ]
+
+        all_results = []
+
+        with DDGS() as ddgs:
+            for q in search_queries:
+                results = list(ddgs.text(q, max_results=3))
+                all_results.extend(results)
+
+        if not all_results:
+            return "No internet results found."
+
+        search_text = ""
+
+        for i, result in enumerate(all_results[:8], start=1):
+            title = result.get("title", "")
+            body = result.get("body", "")
+            href = result.get("href", "")
+
+            search_text += f"\nResult {i}\nTitle: {title}\nInfo: {body}\nSource: {href}\n"
+
+        return search_text
+
+    except Exception as e:
+        return f"Internet search failed: {e}"
+
+web_keywords = [
+    "latest",
+    "current",
+    "today",
+    "news",
+    "price",
+    "stock",
+    "weather",
+    "revenue",
+    "2026",
+    "2027",
+    "recent",
+    "who won",
+    "score",
+    "net worth",
+    "ceo"
+]
+
+
+def should_search_web(user_text):
+    router_prompt = f"""
+Classify the user request.
+
+Return only one word:
+WEB = needs current/recent/live facts, news, prices, dates, sports, companies, weather, latest info.
+LOCAL = can be answered by reasoning, coding help, explanation, math, or conversation.
+
+User request:
+{user_text}
+"""
+
+    try:
+        response = chat(
+            model=BRAIN_MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": router_prompt
+                }
+            ]
+        )
+
+        route = response["message"]["content"].strip().upper()
+        return "WEB" in route
+
+    except Exception as e:
+        print("Router error:", e)
+        return False
 
 
 
@@ -193,6 +276,11 @@ async def speak_async(text):
         pass
 
 
+
+
+
+
+
 def speak(text):
     asyncio.run(speak_async(text))
 
@@ -316,7 +404,18 @@ while True:
         continue
 
     if text_lower.startswith("play "):
+
         song = text_lower.replace("play", "", 1).strip()
+
+        for suffix in [
+            " song",
+            " songs",
+            " music",
+            " video",
+            " videos"
+        ]:
+            if song.endswith(suffix):
+                song = song[:-len(suffix)].strip()
 
         if song:
             try:
@@ -382,6 +481,45 @@ while True:
         speak(answer)
         continue
 
+    if any(keyword in text_lower for keyword in web_keywords) or should_search_web(text):
+            print("Astra is searching the internet...")
+            speak("Searching the internet")
+
+            search_results = search_internet(text)
+
+            prompt = f"""
+    You are Astra.
+
+    Answer the user's question using the internet search results below.
+
+    User question:
+    {text}
+
+    Internet search results:
+    {search_results}
+
+    Rules:
+- Use the search results, not old memory.
+- If the answer appears in the results, answer directly.
+- Be concise.
+- Do not say the internet has no information unless the search results are truly empty.
+    """
+
+            response = chat(
+                model=BRAIN_MODEL,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+
+            answer = response["message"]["content"].strip()
+
+            print("Astra:", answer)
+            speak(answer)
+            continue
     print("Sending to Llama...")
 
     conversation.append(
